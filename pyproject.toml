@@ -1,0 +1,22 @@
+[project]
+name = "gemini-mcp"
+version = "0.1.0"
+description = "Gemini MCP Server - External AI knowledge and real-time web search via Gemini"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastmcp>=2.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[project.scripts]
+gemini-mcp = "server:mcp.run"

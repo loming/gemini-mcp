@@ -62,8 +62,13 @@ Add this configuration to your Claude Desktop settings file:
 {
   "mcpServers": {
     "gemini-mcp": {
-      "command": "python",
-      "args": ["/path/to/gemini-mcp/server.py"]
+      "command": "{{PATH_TO_UV}}", // Run `which uv` and place the output here
+      "args": [
+        "--directory",
+        "{{PATH_TO_SRC}}/gemini-mcp", // cd into the repo, run `pwd` and enter the output here + "/whatsapp-mcp-server"
+        "run",
+        "server.py"
+      ]
     }
   }
 }
@@ -77,8 +82,13 @@ Add to your Cursor settings (`.cursor-settings/settings.json`):
 {
   "mcp.servers": {
     "gemini-mcp": {
-      "command": "python",
-      "args": ["/path/to/gemini-mcp/server.py"]
+      "command": "{{PATH_TO_UV}}", // Run `which uv` and place the output here
+      "args": [
+        "--directory",
+        "{{PATH_TO_SRC}}/gemini-mcp", // cd into the repo, run `pwd` and enter the output here + "/whatsapp-mcp-server"
+        "run",
+        "server.py"
+      ]
     }
   }
 }
