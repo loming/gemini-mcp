@@ -80,3 +80,5 @@ CLAUDE.md
 claude/
 .claude/
 claude-*
+
+node_modules/
