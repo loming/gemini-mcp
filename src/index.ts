@@ -51,7 +51,21 @@ server.addTool({
   },
 });
 
+function setupGracefulShutdown() {
+  process.on('SIGINT', () => {
+    console.log('\n👋 Gracefully shutting down Gemini MCP Server...');
+    process.exit(0);
+  });
+
+  process.on('SIGTERM', () => {
+    console.log('\n👋 Gracefully shutting down Gemini MCP Server...');
+    process.exit(0);
+  });
+}
+
 async function main() {
+  setupGracefulShutdown();
+  
   server.start({
     transportType: "httpStream",
     httpStream: {
@@ -61,6 +75,10 @@ async function main() {
   
   console.log(`🚀 Gemini MCP Server starting on port ${PORT}`);
   console.log(`✅ Server running on http://localhost:${PORT}`);
+  console.log(`💡 Press Ctrl+C to stop the server`);
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error('❌ Failed to start server:', error);
+  process.exit(1);
+});
