@@ -10,7 +10,8 @@
     "dev": "node --loader ts-node/esm src/index.ts"
   },
   "dependencies": {
-    "fastmcp": "^3.8.2"
+    "fastmcp": "^3.8.4",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

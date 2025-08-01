@@ -7,18 +7,41 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 13001;
 const server = new FastMCP({
   name: "Gemini Search Server",
   version: "1.0.0",
+  health: {
+    // Enable / disable (default: true)
+    enabled: true,
+    // Body returned by the endpoint (default: 'ok')
+    message: "healthy",
+    // Path that should respond (default: '/health')
+    path: "/health",
+    // HTTP status code to return (default: 200)
+    status: 200,
+  },
+  ping: {
+    enabled: true,
+    intervalMs: 25000, // 25s - optimal balance
+    logLevel: "info" // enable monitoring
+  },
 });
 
 server.addTool({
   name: "query",
-  description: "Send a query to an AI agent that can search real-time internet data and provide a second AI opinion",
+  description: "Search on internet for real-time information",
   parameters: z.object({
     text: z.string().describe("The search query or question to send to the AI agent"),
   }),
   execute: async (args: { text: string }) => {
+    console.log(`📝 Received query: ${args.text.substring(0, 100)}...`);
     return new Promise((resolve, reject) => {
-      const process = spawn("gemini-cli", [], {
+      // Validate input
+      if (!args.text || args.text.trim() === '') {
+        reject(new Error('Query text cannot be empty'));
+        return;
+      }
+
+      const process = spawn("gemini", [], {
         stdio: ["pipe", "pipe", "pipe"],
+        timeout: 30000, // 30 second timeout
       });
 
       let output = "";
@@ -33,20 +56,40 @@ server.addTool({
       });
 
       process.on("close", (code) => {
+        clearTimeout(timeoutId);
         if (code === 0) {
-          resolve(output.trim());
+          const result = output.trim() || "No response from Gemini CLI";
+          console.log(`✅ Query completed successfully (${result.length} characters)`);
+          resolve(result);
         } else {
-          reject(new Error(`gemini-cli exited with code ${code}. Error: ${errorOutput}`));
+          const errorMsg = `gemini-cli exited with code ${code}. Error: ${errorOutput || 'Unknown error'}`;
+          console.error(`❌ Query failed: ${errorMsg}`);
+          reject(new Error(errorMsg));
         }
       });
 
       process.on("error", (err) => {
-        reject(new Error(`Failed to spawn gemini-cli: ${err.message}`));
+        reject(new Error(`Failed to spawn gemini-cli: ${err.message}. Make sure gemini-cli is installed and available in PATH.`));
+      });
+
+      // Set a timeout for the process
+      const timeoutId = setTimeout(() => {
+        process.kill();
+        reject(new Error('Gemini CLI query timed out after 30 seconds'));
+      }, 30000);
+
+      process.on('exit', () => {
+        clearTimeout(timeoutId);
       });
 
       // Send the query text to the process
-      process.stdin.write(args.text);
-      process.stdin.end();
+      try {
+        process.stdin.write(args.text);
+        process.stdin.end();
+      } catch (err) {
+        clearTimeout(timeoutId);
+        reject(new Error(`Failed to write to gemini-cli: ${err}`));
+      }
     });
   },
 });
@@ -66,16 +109,23 @@ function setupGracefulShutdown() {
 async function main() {
   setupGracefulShutdown();
   
-  server.start({
-    transportType: "httpStream",
-    httpStream: {
-      port: PORT,
-    },
-  });
-  
-  console.log(`🚀 Gemini MCP Server starting on port ${PORT}`);
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`💡 Press Ctrl+C to stop the server`);
+  try {
+    await server.start({
+      transportType: "httpStream",
+      httpStream: {
+        port: PORT,
+        endpoint: "/mcp"
+      },
+    });
+    
+    console.log(`🚀 Gemini MCP Server started successfully`);
+    console.log(`✅ Server running on http://localhost:${PORT}/mcp`);
+    console.log(`🛠️ Available tools: query`);
+    console.log(`💡 Press Ctrl+C to stop the server`);
+  } catch (error) {
+    console.error('❌ Failed to start Gemini MCP Server:', error);
+    process.exit(1);
+  }
 }
 
 main().catch((error) => {

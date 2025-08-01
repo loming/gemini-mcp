@@ -2,6 +2,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install gemini-cli globally (breaking system packages as this is a container)
+RUN npm install -g @google/gemini-cli
+
 # Copy package files
 COPY package*.json ./
 
